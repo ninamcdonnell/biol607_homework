@@ -7,7 +7,7 @@
 #1a Load palmerpenguins data set
 library(palmerpenguins)
 data(penguins)
-
+ 
 #1b Head data set
 head(penguins)
 
