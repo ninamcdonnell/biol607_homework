@@ -1,0 +1,96 @@
+---
+title: "BIOL 607 Homework 1"
+author: "Nina McDonnell"
+date: "9/18/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+*Load quakes with data(quakes). Show what’s there with str() and summary().*
+
+str() shows that the data frame includes 5 vectors. "lat," "long," and "mag" are numeric, whereas "depth" and "stations" are composed of integers. summary() provided descriptive statistics for each vector.
+
+To learn more about the data set, I tried ?quakes. This function was particularly useful because it provided the units for vectors, which could not be discerned from the str or summary functions, as well as background information about the data. I also explored the data using View(). 
+
+```{r question 1}
+data(quakes)
+?quakes
+str(quakes)
+summary(quakes)
+```
+```{r eval=FALSE}
+View(quakes)
+```
+
+<img src="https://littletoadink.com/wp-content/uploads/2020/09/Screen-Shot-2020-09-17-at-9.05.37-PM.png" width="400"/>
+
+## Question 2
+
+*Show the entirity of the column long.*
+
+Showing the entirety of column "long":
+
+```{r question2}
+quakes$long
+```
+
+## Question 3
+
+*Hey, another useful function - unique()! Apply it to a vector, and you can see what are all of the unique values. It’s great for really digging into a problematic vector. What unique stations are there? Use length() with unique() to determine how many stations there are.*
+
+From "?quakes", I can see that "stations" tells us the number of stations reporting. We cannot tell how many unique stations there are, since some may never have reported. However, from the max() function, we can see that there are at least `r max(quakes$stations)`-- since that is the greatest number of stations that reported for any single seismic event.
+
+```{r question 3}
+unique(quakes$stations)
+length(quakes$stations)
+max(quakes$stations)
+```
+
+## Question 4
+
+*Using range(), what is the range of depths where quakes occur?*
+
+The range of depth at which earthquakes occurred is 40-680 km.
+
+```{r question 4}
+range(quakes$depth)
+```
+
+## E.C.
+
+*Where was the earthquake of largest magnitude found? You’ll need to use come comparisons and the max() function for this in your indices instead of a number!*
+
+**Approach** First, I used max(quakes$mag) to find that the largest magnitude earthquake had a value of 6.4 for "mag." To identify the location of this event, I used the View() function to pull up a table, then searched the magnitude column for "6.4" to find the associated lat, long, and depth values.
+
+The largest magnitude earthquake occurred at lat=-15.56, long=167.62, depth=127 km.
+
+
+```{r extra credit}
+max(quakes$mag) 
+```
+```{r eval=FALSE}
+View(quakes)
+```
+Filtered View() table:
+
+<img src="https://littletoadink.com/wp-content/uploads/2020/09/Screen-Shot-2020-09-17-at-9.06.32-PM.png" width="400"/>
+
+
+## **GitHub Repository**
+
+https://github.com/ninamcdonnell/biol607_homework
+
+
+
+
+
+
+-------
+
