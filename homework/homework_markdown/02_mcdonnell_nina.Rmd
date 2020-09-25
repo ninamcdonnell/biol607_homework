@@ -264,5 +264,4 @@ plot(se~sample_size, data = gentoo_dataframe2) #plot se~ sample size, looks the 
 ```
 
 ## *Extra credit:* submitted via GitHub.
-### Repository: https://github.com/ninamcdonnell/biol607_mcdonnell
-
+### Repository: https://github.com/ninamcdonnell/biol607_mcdonnell/tree/master/homework/homework_markdown
