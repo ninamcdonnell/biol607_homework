@@ -162,13 +162,12 @@ penguin_plot
 
 ### 3c. Interesting. What if you had made the same plot with the whole dataset? What do you see? Is there anything that could clarify the result any more? Think about it - lots of possible right answers here.
 
-After viewing plots of flipper length ~ mass for individual penguins from the whole dataset, I can see that there is a positive realtionship between the two variables within each group (species_island) sampled. However, this does not clarify the potential relationship between flipper length and body mass across species from 3b. There may be many other species that do not fit the trend of greater species body size = greater species flipper length (say, a species with very short flippers and large body mass), even if the two traits do have a positive relationship within their own populations.  Understanding the relationship between the traits within populations does not shed any light on the pattern observed across species. All we can say is that within each species_island group that was sampled, there was a positive relationship between body mass and flipper length.
+``` {r 3c species_island}
 
-``` {r 3c}
-
-new_penguins4 <- new_penguins %>% #made new data frame without averaged mass and flipper length for each species_island
+new_penguins4 <- new_penguins %>% #made new data frame with individual mass and flipper length data points (not averaged) for each species_island group (now showing the whole data set, but still grouped)
   group_by(species_island) %>% #grouping penguins by species_island
-  select(species_island, flipper_length_mm, body_mass_g)#selecting only variables of interest for the dataframe
+  select(species_island, flipper_length_mm, body_mass_g) %>% #selecting only variables of interest for the dataframe
+  ungroup() #ungroup dataset to avoid problems
 
 #I used ggplot 2 to plot flipper length ~ mass for each species_island.
 penguin_plot2 <- ggplot(data=new_penguins4, aes(x=body_mass_g, y=flipper_length_mm, color=species_island)) +
@@ -181,6 +180,45 @@ penguin_plot2 <- ggplot(data=new_penguins4, aes(x=body_mass_g, y=flipper_length_
 
 penguin_plot2
 ```
+
+After viewing plots of flipper length ~ mass for individual penguins from the whole dataset, I can see that there is a positive realtionship between the two variables within each group (species_island) sampled. However, this does not clarify the potential relationship between flipper length and body mass across species from 3b. There may be many other species that do not fit the trend of greater species body size = greater species flipper length (say, a species with very short flippers and large body mass), even if the two traits do have a positive relationship within their own populations.  Understanding the relationship between the traits within populations does not shed any light on the pattern observed across species. All we can say is that within each species_island group that was sampled, there was a positive association between body mass and flipper length.
+
+I proceeded to explore the relationship within species...
+
+```{r 3c species}
+new_penguins5 <- new_penguins %>% #made new data frame with mass and flipper length for each species (whole data set, now only grouped by species)
+  group_by(species) %>% #grouping penguins by species 
+  select(species, flipper_length_mm, body_mass_g)%>% #selecting only variables of interest for the dataframe
+  ungroup() #ungroup dataset to avoid problems
+
+penguin_plot3 <- ggplot(data=new_penguins5, aes(x=body_mass_g, y=flipper_length_mm, color=species)) +
+  geom_point() +
+  ylab("average flipper length (mm)")+
+  xlab("average body mass (g)")+
+  ggtitle("flipper length ~ body mass")+
+  stat_smooth(method=lm)
+
+penguin_plot3
+```
+
+The above plot is more useful for understanding the relationship between flipper length and body mass for the three species. We can see that there is a positive association between the two variables for all species sampled.  This is more informative than the first plot because it shows the trends within species, and less redundant than the second plot, which shows the three island samples for Adelie separately.
+
+```{r 3c no grouping}
+new_penguins6 <- new_penguins %>% #dataframe with no grouping
+  select(species, flipper_length_mm, body_mass_g)%>% #selecting only variables of interest for the dataframe
+  ungroup() #ungroup dataset to avoid problems
+
+penguin_plot4 <- ggplot(data=new_penguins6, aes(x=body_mass_g, y=flipper_length_mm)) +
+  geom_point() +
+  ylab("average flipper length (mm)")+
+  xlab("average body mass (g)")+
+  ggtitle("flipper length ~ body mass")+
+  stat_smooth(method=lm)
+
+penguin_plot4
+```
+
+Lastly, I tried removing all groupings to observe flipper length and body mass across a pool of the individual penguins sampled. I think that this is less helpful than the plots grouped by species because it does not convey that the positive relationship was observed in three separate species (3 independent samples). However, it does depict the relationship more generally. 
 
 ## 4. Let’s get ready to simulate
 
