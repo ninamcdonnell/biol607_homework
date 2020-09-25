@@ -3,6 +3,8 @@
 #'@author Nina McDonnell
 #'@Date 9/24/20
 
+#NOTE: THIS IS NOT A FINAL HOMEWORK SUBMISSION. SEE .RMD FOR GRADING
+
 #------Question 1 ----------
 #1a Load palmerpenguins data set
 library(palmerpenguins)
