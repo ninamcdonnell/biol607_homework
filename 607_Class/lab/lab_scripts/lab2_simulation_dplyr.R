@@ -221,7 +221,8 @@ map_dbl(1:7, ~mean(1:10))
 my_vec <- c(11, 10, 10, 9, 10, 11, 10, 9, 10, 
             12, 9, 11, 8, 11, 11, 10, 11, 10, 
             11, 9)
-#Use map_df() to make a data frame that, for the numbers 3 through 15, returns two columns. One is the the average of the element of the vector 1 through the chosen number, the second is the standard deviation.
+#Use map_df() to make a data frame that, for the numbers 3 through 15, returns two columns. One is the the average 
+#of the element of the vector 1 through the chosen number, the second is the standard deviation.
 #e.g. 10.2 for a mean - but the 10 will be .x for you!
 map_df(3:15, ~data.frame(m = mean(my_vec[1:.x]),
                          s = sd (my_vec[1:.x])))

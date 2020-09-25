@@ -6,6 +6,10 @@
 #------Question 1 ----------
 #1a Load palmerpenguins data set
 library(palmerpenguins)
+library(tidyverse)
+library(magrittr)
+library(purrr)
+
 data(penguins)
  
 #1b Head data set
@@ -55,7 +59,9 @@ penguins %>%
 penguins %>% 
   filter(island=="Biscoe") %>% 
   group_by(species) %>% 
-  summarize(avg_mass_species=mean(body_mass_g, na.rm=TRUE))
+  summarize(avg_mass_species=mean(body_mass_g, na.rm=TRUE),
+            med_mass_species=median(body_mass_g, na.rm=TRUE),
+            sd_mass_species=sd(body_mass_g, na.rm=TRUE))
 
 penguins %>% 
   filter(island=="Biscoe") %>% 
@@ -82,19 +88,75 @@ new_penguins <- penguins %>%
 
 boxplot(flipper_length_mm~species_island, data=new_penguins) #by species_island
 
-boxplot(flipper_length_mm~species, data=new_penguins) #just by species
-
-boxplot(flipper_length_mm~island, data=new_penguins) #just by island
-
 #E.C. For one point of extra credit, redo creating the species_island column with the sep as \n instead of _. What does \n do? You will find it very handy in the future.
 
 new_penguins2 <-penguins %>% 
-  mutate(species_island=paste(species, island, sep="\n"))
+  mutate(species_island=paste(species, island, sep= "\n"))
 
 View(new_penguins2)
 
 #3b. Show the relationship between average flipper length and average body mass by species and island. What do you see?
-  
-plot(flipper_length_mm~body_mass_g, data=new_penguins) %>% 
-  group_by(species)
 
+new_penguins3 <- new_penguins %>% 
+  group_by(species_island) %>% 
+  select(species_island, flipper_length_mm, body_mass_g) %>% 
+  summarise(average_flipper_length_mm=mean(flipper_length_mm, na.rm = TRUE), average_body_mass_g=mean(body_mass_g, na.rm=TRUE)) %>% 
+  head()
+
+plot(average_flipper_length_mm~average_body_mass_g, data=new_penguins3, group(species_island))
+
+library(ggplot2)
+
+penguin_plot <- ggplot(data=new_penguins3, aes(x=average_body_mass_g, y=average_flipper_length_mm, color=species_island)) +
+  geom_point() +
+  ylab("average flipper length (mm)")+
+  xlab("average body mass (g)")+
+  ggtitle("flipper length ~ body mass")
+  
+penguin_plot
+
+#3c
+
+new_penguins4 <- new_penguins %>% 
+  group_by(species_island) %>% 
+  select(species_island, flipper_length_mm, body_mass_g)
+
+penguin_plot2 <- ggplot(data=new_penguins4, aes(x=body_mass_g, y=flipper_length_mm, color=species_island)) +
+  geom_point() +
+  ylab("average flipper length (mm)")+
+  xlab("average body mass (g)")+
+  ggtitle("flipper length ~ body mass")+
+  facet_wrap(vars(species_island))+
+  stat_smooth(method=lm)
+
+penguin_plot2
+
+#----QUESTION 4---------
+
+#4a
+
+gentoo_biscoe_bill <- pull(penguins %>% 
+                             filter(species=="Gentoo") %>% 
+                             filter(island=="Biscoe") %>% 
+                             select(bill_length_mm))
+
+#4b
+
+length(gentoo_biscoe_bill) #124 samples
+
+replicate(n=10, sd(gentoo_biscoe_bill, na.rm = TRUE)/sqrt(124)) 
+
+#4c
+
+gentoo_dataframe <- map_df(5:100, ~data.frame(
+  sample_size= .x,
+  mean = mean(gentoo_biscoe_bill[1:.x]),
+  sd = sd (gentoo_biscoe_bill[1:.x])))
+
+#4d
+
+gentoo_dataframe2 <- gentoo_dataframe %>% 
+  mutate(se= sd/sqrt(124))
+
+plot(sd~sample_size, data = gentoo_dataframe2)
+plot(se~sample_size, data = gentoo_dataframe2)

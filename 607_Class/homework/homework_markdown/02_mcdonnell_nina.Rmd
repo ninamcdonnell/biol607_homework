@@ -1,0 +1,230 @@
+---
+title: "BIOL 607 Homework 2"
+author: "Nina McDonnell"
+date: "9/25/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning= FALSE, message = FALSE)
+library(dplyr)
+library(magrittr)
+library(purrr)
+library(tidyverse)
+library(ggplot2)
+```
+
+## 1. Some Data with Flippers
+### 1a. Load the library palmerpenguins after installing it.
+
+```{r 1a}
+#load palmerpenguins library
+library(palmerpenguins)
+```
+
+### 1b. Show the head of the dataset penguins
+
+```{r 1b}
+data(penguins) 
+head(penguins) #head penguins dataset to see columns
+```
+
+### 1c. What do you learn by using str() and summary() on penguins?
+
+From str() and summary(), I can see that the data is a 344 row x 8 column tibble including factor, numeric, and integer vectors. Summary gives totals of counts of data points from each species, island, and year (factors), and describes the variance of numeric and integer values, such as beak and flipper measurements and mass.
+
+```{r 1c}
+str(penguins)   #The data is a 344 row x 8 column tibble including factor, numeric, and integer vectors. 
+summary(penguins)    #Gives totals of counts for each species, island, and year (factors), and describes variance of numeric and integer values- such as beak and flipper measurements and mass. 
+```
+
+### 1d. What are the quantiles of bill depth across the whole data set? What do those quantiles mean?
+The 0%, 25%, 50%, 75%, and 100% quantities for bill depth are `r quantile(penguins$bill_depth_mm, na.rm=TRUE)`, respectively.
+
+This means that 100% of penguins have bill lengths between 13.1 and 21.5 mm. 50% of the data points for bill depth are greater than 17.3mm and 25% of data points are greater than 18.7mm (75th percentile).
+
+```{r 1d}
+quantile(penguins$bill_depth_mm, na.rm=TRUE) #quantiles for bill depth from the penguins data set, NA values were removed. 
+```
+
+## 2. What’s here? Let’s use dplyr!
+
+### 2a. If I have a vector, c(1,4,7,NA,9), what is its mean? Note, the NA is going to cause a problem. Look at ?mean to learn how to solve it.
+
+The mean of the vector will be "NA", unless na.rm =TRUE. **Once corrected, the mean is 5.25.**
+
+```{r 2a}
+my_vec <- c(1,4,7,NA,9)  #created vector to test how NA value will affect mean().
+mean(my_vec) #testing mean with problematic NA value
+?mean #I will need to use na.rm=TRUE to calculate the mean without the NA value.
+mean(my_vec, na.rm = TRUE) #the mean of the vector
+```
+
+### 2b. What is the mean, sd, and median of body mass across the data set? Note, these NAs are going to cause some problems, so you might need to look at the documentation for the relevant functions.
+
+The mean of body mass is 4202g
+
+The median of body mass is 4050g
+
+The standard deviation of body mass is 802g
+
+```{r 2b}
+penguins %>% 
+  summarize(mean_body_mass=mean(body_mass_g, na.rm=TRUE), #mean, median, and sd of body mass for penguins. NA values removed.
+  median_body_mass=median(body_mass_g, na.rm=TRUE),
+  sd_body_mass=sd(body_mass_g, na.rm=TRUE)) 
+```
+
+### 2c. Repeat 2b, but, show us how these quantities differ by species.
+
+```{r 2c}
+penguins %>% 
+  group_by(species) %>% #group penguins by species
+  summarize(avg_mass_species=mean(body_mass_g, na.rm=TRUE), #mean, median, and sd of body mass for species groups. NA values removed.
+  med_mass_species=median(body_mass_g, na.rm=TRUE),
+  sd_mass_species=sd(body_mass_g, na.rm=TRUE)) %>% 
+  ungroup() #ungroup dataset to avoid problems
+
+```
+
+### 2d. Repeat 2c, but just for Biscoe island. What is different in the results?
+
+The results only include Adelie and Gentoo penguins because there were no Chinstrap penguins sampled from Biscoe island. Average mass was slightly greater for Adelie penguins on Biscoe island than across the whole sample, but average Gentoo mass was the same (once we get to 3b, we can see that this is because Gentoo are only found on Biscoe island). Median and standard deviation of mass were also greater for Adelie penguins on Biscoe island than Adelie accross all locations.
+
+```{r 2d}
+penguins %>% 
+  filter(island=="Biscoe") %>% #adding Biscoe island as a filter to examine only data points from this location
+  group_by(species) %>% #grouping Biscoe island penguins by species
+  summarize(avg_mass_species=mean(body_mass_g, na.rm=TRUE), #calculating mean, median and sd of body mass for each species group (NAs removed).
+            med_mass_species=median(body_mass_g, na.rm=TRUE),
+            sd_mass_species=sd(body_mass_g, na.rm=TRUE)) %>% 
+  ungroup() #ungroup dataset to avoid problems
+
+```
+
+### 2e. Make a species-island column in penguins using paste(). This is an awesome function that takes multiple strings, and slams them together using the argument sep = to define how the string should be combined. Try out paste("Hello", "Goodbye", sep = "! ") to see how it works. Have the two be separated by _.
+
+```{r 2e}
+paste("Hello", "Goodbye", sep ="!") #testing paste() with hello and goodbye
+
+#creating new data frame from penguins with a species_island column
+new_penguins <- penguins %>% 
+  mutate(species_island=paste(species, island, sep="_"))
+
+str(new_penguins) #str data frame to examine vectors
+```
+
+## 3. A Little Light Plotting
+
+### 3a. Show the distribution of flipper_length_mm by species and island using boxplots. For one point of extra credit, redo creating the species_island column with the sep as \n instead of _. What does \n do? You will find it very handy in the future.
+
+``` {r 3a}
+boxplot(flipper_length_mm~species_island, data=new_penguins) #boxplot with species_island on x-axis and flipper length on y-axis
+```
+
+## *Extra credit *
+
+Using sep as did not do anything different with my column heading when displayed in the console, but I read that it is supposed to create a new line between the pasted strings. 
+
+```{r 3xc}
+new_penguins2 <-penguins %>% 
+  mutate(species_island=paste(species, island, sep= "\n")) #trying paste() with \n to see what happens
+
+str(new_penguins2) #str data frame to examine vectors
+```
+
+
+### 3b. Show the relationship between average flipper length and average body mass by species and island. What do you see?
+
+In the plot of average flipper length ~ average body mass for species_island, I can see that the three Adelie penguin points are clustered towards the lower left. Chinstrap penguins have greater average flipper length than Adelie from all islands, but similar body mass (Chinstrap have longer flippers relative to body mass than Adelie). Gentoo penguins have much greater body mass and flipper length than the other two species. There may be a positive relationship between body mass and flipper length for penguins, but it is difficult to tell from these data because there are only 5 samples of average flipper length and body mass for species_island groups, and the single Gentoo data point heavily influences the appearance of a positive relationship. Additionally, I would not consider the three Adelie points to be independent if comparing values across species, since they are from a single species.
+
+```{r 3b}
+#making new data frame with flipper length and body mass grouped by species_island and then averaged for each group
+new_penguins3 <- new_penguins %>% 
+  group_by(species_island) %>% #grouping penguins by species_island
+  select(species_island, flipper_length_mm, body_mass_g) %>% #selecting only the three variables of interest for the data frame 
+  summarise(average_flipper_length_mm=mean(flipper_length_mm, na.rm = TRUE),
+            average_body_mass_g=mean(body_mass_g, na.rm=TRUE)) %>% #calculating averages for flipper length and body mass for each species_island group
+  ungroup() %>% #ungroup dataset to avoid problems
+  head() #check that data structure includes the desired elements
+
+#I was not sure how to display the species_island data points in such a way that they could be easily distinguished from one another using base plots, so here is ggplot2:
+penguin_plot <- ggplot(data=new_penguins3, aes(x=average_body_mass_g, y=average_flipper_length_mm, color=species_island)) +
+  geom_point() +
+  ylab("average flipper length (mm)")+
+  xlab("average body mass (g)")+
+  ggtitle("flipper length ~ body mass")
+
+penguin_plot
+```
+
+### 3c. Interesting. What if you had made the same plot with the whole dataset? What do you see? Is there anything that could clarify the result any more? Think about it - lots of possible right answers here.
+
+After viewing plots of flipper length ~ mass for individual penguins from the whole dataset, I can see that there is a positive realtionship between the two variables within each group (species_island) sampled. However, this does not clarify the potential relationship between flipper length and body mass across species from 3b. There may be many other species that do not fit the trend of greater species body size = greater species flipper length (say, a species with very short flippers and large body mass), even if the two traits do have a positive relationship within their own populations.  Understanding the relationship between the traits within populations does not shed any light on the pattern observed across species. All we can say is that within each species_island group that was sampled, there was a positive relationship between body mass and flipper length.
+
+``` {r 3c}
+
+new_penguins4 <- new_penguins %>% #made new data frame without averaged mass and flipper length for each species_island
+  group_by(species_island) %>% #grouping penguins by species_island
+  select(species_island, flipper_length_mm, body_mass_g)#selecting only variables of interest for the dataframe
+
+#I used ggplot 2 to plot flipper length ~ mass for each species_island.
+penguin_plot2 <- ggplot(data=new_penguins4, aes(x=body_mass_g, y=flipper_length_mm, color=species_island)) +
+  geom_point() +
+  ylab("average flipper length (mm)")+
+  xlab("average body mass (g)")+
+  ggtitle("flipper length ~ body mass")+
+  facet_wrap(vars(species_island))+ #facet_wrap to make separate plots for each species_island 
+  stat_smooth(method=lm) #adding lm line to help visualize patterns
+
+penguin_plot2
+```
+
+## 4. Let’s get ready to simulate
+
+### 4a. Grab the values for bill_length_mm for Gentoo penguins in Biscoe Island and put it into an object. Note, the dplyr function pull() is kinda cool, as if you apply it to a data frame, it will pull out a vector from a column of interest. Try mtcars %>% pull(mpg). Kinda cool. Might help you here.
+
+```{r 4a}
+mtcars %>% #testing pull() on mtcars
+  pull(mpg)
+
+gentoo_biscoe_bill <- pull(penguins %>%  #pulling vector from penguins dataset
+                             filter(species=="Gentoo") %>%  #only want Gentoo 
+                             filter(island=="Biscoe") %>%  #only want Biscoe
+                             select(bill_length_mm)) #selecting bill_length as the variable of interest
+gentoo_biscoe_bill
+```
+
+### 4b. Use replicate() to calculate the standard error of the mean 10 times. Use a formula! Don’t forget that NA values shouldn’t be included!
+
+SE= 0.276759
+
+```{r 4b}
+replicate(n=10, sd(gentoo_biscoe_bill, na.rm = TRUE)/sqrt(length(gentoo_biscoe_bill))) #calculated se 10 times, using formula: SD/sqrt(n). NA values removed.
+```
+### 4c. Use map_df() to create a data frame with the mean and sd of different sample sizes using the first 5 through 100 values (so, n = 5:100 - smallest sample size will have the values 1-5). Make sure the sample size is included in the final data frame.
+
+```{r 4c}
+gentoo_dataframe <- map_df(5:100, ~data.frame(  #using first 5-100 values
+  sample_size= .x,  #add sample size as comumn in dataframe
+  mean = mean(gentoo_biscoe_bill[1:.x]), #calculate mean 
+  sd = sd (gentoo_biscoe_bill[1:.x]))) #calculate SD
+```
+
+### 4d. Plot the relationship between sample size and SD and sample size versus SE of the mean. What difference do you see and why? Note, you’ll need to create a column for SE here!
+
+The positions of points on the two plots look the same, but the y-axis values are smaller for SE than for SD. This is because the SE is being calculated from the SD, but there is less variability between repeated samples than is observed within a given sample. 
+
+```{r 4d}
+gentoo_dataframe2 <- gentoo_dataframe %>% #making new data frame with column for SE
+  mutate(se= sd/sqrt(length(gentoo_biscoe_bill))) #mutate to add SE column to data frame (sd/sqrt(n)) 
+
+plot(sd~sample_size, data = gentoo_dataframe2) #plot sd~ sample size
+plot(se~sample_size, data = gentoo_dataframe2) #plot se~ sample size, looks the same except for y-axis values
+```
+
+## *Extra credit:* submitted via GitHub pull request. 
+### Repository: https://github.com/ninamcdonnell/biol607_homework
+

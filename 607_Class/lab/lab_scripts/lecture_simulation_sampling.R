@@ -2,7 +2,7 @@
 #'@title Simularion of Sampling to answer...
 #'HOW BIG SHOULD MY SAMPLE SIZE BE?!?
 #'@author Nina McDonnell
-#'@Date 9/24/20
+#'@Date 9/22/20
 
 #libraries for this code
 library(dplyr)
