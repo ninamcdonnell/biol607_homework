@@ -1,0 +1,464 @@
+---
+title: "BIOL 607 Homework 5"
+author: "Nina McDonnell"
+date: "10/16/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning= FALSE, message = FALSE)
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(ggfortify)
+library(broom)
+
+download.file(url="https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q15LanguageGreyMatter.csv", destfile = "chap16q15LanguageGreyMatter.csv")
+
+download.file(url="https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter16/chap16q19LiverPreparation.csv", destfile = "chap16q19LiverPreparation.csv")
+
+download.file(url="https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q19GrasslandNutrientsPlantSpecies.csv", destfile = "chap17q19GrasslandNutrientsPlantSpecies.csv")
+
+download.file(url="https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q25BeetleWingsAndHorns.csv", destfile = "chap17q25BeetleWingsAndHorns.csv")
+
+download.file(url="https://whitlockschluter.zoology.ubc.ca/wp-content/data/chapter17/chap17q30NuclearTeeth.csv", destfile = "chap17q30NuclearTeeth.csv")
+
+```
+
+# Q1
+
+### 1a. Display the association between the two variables in a scatter plot
+
+```{r 1a}
+#read in the data
+grey_matter <- read.csv("chap16q15LanguageGreyMatter.csv")
+
+#what's here?
+str(grey_matter)
+
+#plot greymatter ~ proficiency 
+profficiency_plot <- ggplot(grey_matter, 
+                                 mapping=aes(x=proficiency, y= greymatter))+
+  geom_point()
+
+profficiency_plot
+```
+
+### 1b. Calculate the correlation between second language proficiency and gray-matter density.
+
+```{r 1b}
+#fit a model
+model <- lm(proficiency~greymatter, data=grey_matter)
+
+#get cor coef
+cor(x=grey_matter$greymatter, y=grey_matter$proficiency)
+
+```
+
+The correlation coefficient is 0.8183134.
+
+### 1c. Test the null hypothesis of zero correlation.
+
+```{r 1c}
+# use F test to compare explained variation against null 
+
+anova(model) %>% 
+  tidy() #make neat data frame
+```
+
+As long as all of the model assumptions are met, we can reject the null hypothesis of zero correlation, p= 0.00000326.
+
+### 1d. What are your assumptions in part (c)? 
+
+Assumptions:  
+1. Valid and representative   
+2. Model captures features in the data   
+3. Additivity and linearity   
+4. Independence of errors   
+5. Equal variance of errors   
+6. Normality of errors   
+7. Minimal outlier influence   
+
+### 1e. Does the scatter plot support these assumptions? Explain.
+
+The plot and model do not clearly violate any of the assumptions (see code for tests below): The relationship looks linear, the model appears to predict the data successfully, there is not a clear relationship between fitted values and residuals, the qqplot is roughly straight, it passes normality tests, and there are no outliers with strong leverage. 
+
+My only concern is that the standardized residuals show a slightly curved shape when plotted against the fit values (suggesting non-linearity), but the curve seems minor and is probably not a serious issue, considering the other diagnostics.
+
+```{r 1d}
+
+# Does the distribution of our predictions match our data? -> YES
+
+#simulate 100 times from model
+model_sims <- simulate(model, nsim = 100) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "sim",
+    values_to = "greymatter"
+  )
+#plot simulations and data to compare distributions
+ggplot() +
+  geom_density(data = model_sims,
+               mapping = aes(x = greymatter, group = sim), 
+               size = 0.2)  +
+  geom_density(data = model_sims,
+               mapping = aes(x = greymatter),
+               size = 2, color = "blue")
+
+# Is there a relationship between fitted and residual values? - slight curve, but not bad
+autoplot(model, which = 1, ncol = 1)
+
+# Did we satisfy normality and homoscedasticity? 
+# QQ plot
+plot(model, which = 2) #not perfect, but close
+# levene test
+residuals(model) %>% hist() #passes
+# shapiro-wilks test 
+residuals(model) %>% 
+  shapiro.test()
+
+# Look for outliers with leverage
+plot(model, which = 4) 
+plot(model, which = 5) # no outliers are outside of the dotted red line for cook's distance
+
+```
+
+### 1f. Do the results demonstrate that second language proficiency affects gray-matter density in the brain? Why or why not?
+
+No, the results cannot demonstrate causality, only that there is a relationship between these two variables. In order to know if one variable affects the other, we would need experimental manipulation (and counterfactual inference).
+
+# Q2
+
+### 2a. Calculate the correlation coefficient between the taurocholate unbound fraction and the concentration 
+
+```{r a}
+#read in the data
+rat_tauro <- read.csv("chap16q19LiverPreparation.csv")
+
+#what's here?
+str(rat_tauro)
+
+#fit a model
+model2 <- lm(unboundFraction~concentration, data=rat_tauro)
+
+#get cor coeff
+cor(x=rat_tauro$concentration, y= rat_tauro$unboundFraction)
+
+```
+
+The correlation coefficient is -0.8563765.
+
+### 2b. Plot the relationship between the two variables in a graph
+
+```{r 2b}
+#plot unbound fraction ~ concentration 
+rat_plot <- ggplot(rat_tauro, 
+                   mapping=aes(x=concentration, y= unboundFraction))+
+  geom_point()+
+  #add line to show the relationship described by the lm, for comparison. 
+  stat_smooth(method = "lm", se=FALSE, linetype= "dashed", color="gray")+ #remove SE to show just the relationship
+  theme_bw()
+
+rat_plot
+
+```
+
+### 2c. Examine the plot in part (b). The relationship appears to be maximally strong, yet the correlation coefficient you calculates in part (a) is not near the maximum possible value. Why not?
+
+The relationship appears to be strong, but not linear. If it were evaluated as a non-linear relationship, or if the data were transformed to a normal distribution, the correlation coefficient would probably be greater. 
+
+### 2d. What steps would you take with these data to meet the assumptions of correlation analysis
+
+I would transform the data to a normal distribution or try a different family, and then re-test the model assumptions to make sure it's suitable. 
+
+# Q3
+
+### 3a. Are these two variables correlated? What is the output of cor() here. What does a test show you?
+
+```{r 3a}
+
+#set up the data frame
+cats <- c(-.3, .42, .85, -.45, .22, -.12, 1.46, -.79, .4, -.07)
+happiness_score <- c(-.57, -.1, -.04, -.29, .42, -.92, .99, -.62, 1.14, .33)
+cat_lady <- data.frame(x=cats, y=happiness_score)
+
+#get cor coef for the variables
+cor(x=cats, y=happiness_score)
+
+#to test hypothesis, first make model
+model_cat_lady <- lm(happiness_score~cats, data=cat_lady)
+
+#use an F test to compare explained variation against null
+anova(model_cat_lady) %>% 
+  tidy() #make neat data frame
+
+```
+
+Yes, these two variables are correlated. The correlation coefficient is 0.6758738. An F-test shows that we can reject the null hypothesis of zero correlation, as long as model assumptions are met, p= 0.0319.
+
+### 3b. What is the SE of the correlation based on the info from cor.test()
+
+```{r 3b}
+
+#use cor.test to get the upper and lower CI
+test <- cor.test(x=cats, y=happiness_score) %>% 
+  tidy() 
+
+#calculate the 95% CI (=2 SE)
+se2 <-  (test$conf.high) - (test$conf.low) #95% confidence interval = 1.96 SE
+
+#divide by 2 to ger 1 SE
+se1 <- se2/1.96
+se1
+```
+
+The SE of the correlation is `r se1`.
+
+### 3c. Now, what is the SE via simulation? To do this, you’ll need to use cor() and get the relevant parameter from the output (remember - you get a matrix back, so, what’s the right index!), replicate(), and sample() or dplyr::sample_n() with replace=TRUE to get, let’s say, 1000 correlations. How does this compare to your value above?
+
+```{r 3c}
+
+#replicate 1000 correlations for samples drawn from cat_lady
+cat_sim <- replicate(1000,
+                     cor(slice_sample(cat_lady, #slice_sample() = newer version of sample_n ()
+                                      n=nrow(cat_lady),
+                                      replace=TRUE)) #gives matrix of correlations as output
+                     [1,2]) %>% #index [1,2] or [2,1] gives correlation of x and y
+  sd() #pipe to sd() to get SE 
+
+cat_sim
+```
+
+The SE of the correlation is `r cat_sim`. This is less than the SE of `r se1` from 3b, which makes sense given that the sample size is now 1000 correlations, rather than 1. 
+
+# Q4
+
+### 4a. Draw a scatter plot of these data? Which variable should be the explanatory variable (x) and which should be the response variable (y)?
+
+```{r 4a}
+
+#read in data
+grassland <- read.csv("chap17q19GrasslandNutrientsPlantSpecies.csv")
+
+#what's here
+str(grassland)
+
+#plot variables with explanatory (x) = nutrients and response (y) = species
+grassland_plot <- ggplot(grassland, 
+                   mapping=aes(x=nutrients, y= species))+
+  geom_point()+
+  theme_bw()
+
+grassland_plot
+```
+
+The explanatory variable should be nutrients and the response variable should be species. 
+
+### 4b. What is the rate of change in the number of plant species supported per nutrient type added? Provide a standard error for your estimate?
+
+```{r 4b}
+
+#fit model
+grassland_model <- lm(species~nutrients, data=grassland)
+
+# use summary to get coefficients
+summary(grassland_model) #slope for species= -3.339, SE= 1.098
+```
+
+For every one unit increase in nutrients, there is a -3.339 change in number of species.  The SE for the estimate is 1.098.
+
+### 4c. Add the least-squares regression line to your scatter plot.  What fraction of the variation in the number of plant species is "explained" by the number of nutrients added?
+
+``` {r 4c}
+
+#add least squares regression line to plot 
+grassland_plot <- ggplot(grassland, 
+                         mapping=aes(x=nutrients, y= species))+
+  geom_point()+
+  stat_smooth(method = "lm")
+
+grassland_plot
+
+#get R2 value
+summary(grassland_model)$r.squared
+
+```
+
+0.5359785 of the variation in n the number of plant species is explained by the number of nutrients added.
+
+### 4d. Test the null hypothesis of no treatment effect on the number of plant species
+
+```{r 4d}
+#use an F test to compare explained variation against null
+anova(grassland_model) %>% 
+  tidy()
+```
+
+If this model meets all of the assumptions, we can reject the null hypothesis of no treatment effect on the number of plant species, p= 0.0161.
+
+# Q5
+
+### 5a. Use these results to calculate the residuals.
+
+```{r 5a}
+#read in data
+beetle <- read.csv("chap17q25BeetleWingsAndHorns.csv")
+
+#what's here?
+str(beetle)
+
+#fit a model 
+beetle_model <- lm(wingMass~hornSize, data=beetle)
+
+#calculate residuals
+beetle_residuals <- residuals(beetle_model)
+beetle_residuals
+```
+
+### 5b. Use your results from part (a) to produce a residual plot.
+
+```{r 5b}
+#plot residuals vs fitted values
+plot(beetle_model, which = 1) 
+
+```
+
+
+### 5c. Use the graph provided and your residual plot to evaluate the main assumptions of linear regression.
+
+Upon initial examination of the graph and residual plot, it looks like the assumption of linearity is not met.  The scatterplot shows a curvilinear relationship, and the residual plot has a loose parabolic shape.  Consequently, the model may not be capturing features in the data. Other assumptions that can be assessed with these two diagnostics appear to be met.
+
+### 5d. In light of your conclusions from part (c), what steps should be taken?
+
+I would recommend transforming the data to a linear relationship before fitting a linear model, then exploring more diagnostics to see if linear regression assumptions were met. Or, model it based on a different distribution with a glm (maybe gamma here?)
+
+### 5e. Do any other diagnostics misbehave?
+
+```{r 5e}
+#5c
+
+#' Test assumptions: 
+#' 1. does dist of predictions match the data? - PROBLEM
+#' 2. is there a relationship between fitted and residual values? - PROBLEM
+#' 3. did we satisfy normality and homoscedasticity? - MOSTLY OK
+#' 4. look for outliers with leverage - MOSTLY OK
+
+# 1. does dist of predictions match the data?
+
+#simulate 100 samples based on model and compare to the real data
+beetle_sims <- simulate(beetle_model, nsim = 100) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "sim",
+    values_to = "wingMass"
+  ) 
+
+#compare simulations and data in plot
+ggplot() +
+  geom_density(data = beetle_sims,
+               mapping = aes(x = wingMass, group = sim), 
+               size = 0.2)  +
+  geom_density(data = beetle,
+               mapping = aes(x = wingMass),
+               size = 2, color = "blue") #the peak from simulations is to the left of the peak from data... not quite right
+
+# 2. is there a relationship between fitted and residual values? (see 5b)
+
+# 3. test for normality and homoscedasticity (see 5b for homoscedacisity- there was no clear funnel shape)
+#qqplot 
+plot(beetle_model, which = 2) #has a bit of a curve
+#shapiro test
+shapiro.test(beetle_residuals) #is normal
+#levene test
+hist(beetle_residuals) #looks about right
+
+# 4. look for outliers with leverage
+plot(beetle_model, which = 5) #observations 1 and 19 are close to the cooks distance line, but do not cross over.
+
+```
+
+Yes, the following diagnostics misbehave: predicted values based on the model, and qq plot.
+
+In the simulation test, the simulated peak is to the left of the peak observed in the data, so this model is not explaining variation successfully. The qqplot deviates from the line at the top and bottom-- these values do not conform to expectations of a normal distribution and indicate unequal variance of errors.
+
+# Q6
+
+### 6a. What is the approximate slope of the regression line?
+
+```{r 6a}
+#read in data
+teeth <- read.csv("chap17q30NuclearTeeth.csv")
+
+#what's here?
+str(teeth)
+
+#fit model
+teeth_model <- lm(dateOfBirth~deltaC14, data=teeth)
+
+#get coefficient for deltaC14 (slope) from model
+summary(teeth_model)
+```
+
+The slope of the regression line is approximately -5.326.
+
+### 6b. Which pair of lines shows the confidence bands? What do these confidence bands tell us?
+
+The inner two lines show the confidence bands. They help to visualize the precision of coefficient estimates by marking the upper and lower bounds of the 95% confidence interval (where, if we were to sample the population many times, 95% of the time the true coefficient value would be included). They also mark ~2 standard errors above and below the mean.
+
+### 6c. Which pair of lines shows the prediction interval? What does this prediction interval tell us?
+
+The outer pair of lines mark the prediction interval. This interval represents the residual error: The fraction of variation in y (date of birth) attributed to x (delta C14). It includes the areas where future observations can be expected to fall with 95% confidence.
+
+### 6d. Using predict() and geom_ribbon() in ggplot2, reproduce the above plot showing data, fit, fit interval, and prediction interval.
+
+```{r 6d}
+
+#fit confidence interval
+teeth_ci <- predict(teeth_model,
+                    interval="confidence") %>% 
+  as_tibble() %>% 
+  rename(lwr_ci = lwr,
+         upr_ci = upr)
+#make new df with upper and lower ci
+teeth<- cbind(teeth, teeth_ci)
+
+#fit prediction interval
+teeth_pi <- predict(teeth_model,
+                         interval="prediction") %>% 
+  as_tibble() %>% 
+  rename(lwr_pi = lwr,
+         upr_pi = upr,
+         fit2 = fit) #rename one "fit" column to avoid plotting issues
+
+#make new df with upper and lower pi
+teeth <- cbind(teeth, teeth_pi) 
+
+#plot intervals as layers
+ggplot(data = teeth,
+       mapping = aes(x = deltaC14,
+                     y = dateOfBirth)) +
+  #scatter plot
+  geom_point()+
+  #regression line
+  stat_smooth(method="lm", se=FALSE)+
+  #prediction interval
+  geom_ribbon(mapping = aes(ymin = lwr_pi,
+                            ymax = upr_pi),
+              alpha = 0.25,
+              fill="blue") +
+  # fit interval
+  geom_ribbon(mapping = aes(ymin = lwr_ci,
+                            ymax = upr_ci),
+              fill = "red",
+              alpha = 0.25)+
+  theme_classic()
+```
+
+The fit is represented by the blue line, the fit interval is represented by the pink ribbon, and the prediction interval is represented by the purple ribbon.
+
+## *Extra credit:* submitted via GitHub.
+### Repository: https://github.com/ninamcdonnell/biol607_mcdonnell/tree/master/homework/homework_markdown
+

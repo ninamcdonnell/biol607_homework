@@ -157,24 +157,54 @@ last_ice <- get_colors("https://www.nationalgeographic.com/content/dam/environme
 last_ice_pallette <- last_ice$col_hex #make an object from a vector of colors to serve as color values in plot
 
 #plot 
+ice2 <- ice %>% 
+  mutate(year_factor=as.factor(Year)) #mutate year to factor so that palette can color it as discrete
 
 #plot extent by month, with a separate line for each year (group)
-ice_animate <-ggplot(data=ice, mapping=aes(x=Month_Name, y=Extent, group=Year, color=year_factor))+
+ggice1 <-ggplot(data=ice2, mapping=aes(x=Month_Name, y=Extent, group=Year, color=Year))+
   labs(x="Month",
        y="Sea ice extent 10^6 km^2",
-       title="Monthly minimum sea ice extent 1978 to 2016",
-       caption= "")+
+       title="Monthly minimum sea ice extent from 1978 to 2016")+
   #use geom_line to visualize trend over time
   geom_line()+
+  scale_color_gradient(low="gray", high="blue")+
+  theme_clean()
+
+min(ice$Extent)#find min ice extent
+View(ice)
+
+ggice1
+
+#plot extent by month, with a separate line for each year (group)
+ggice2 <-ggplot(data=ice2, mapping=aes(x=Month_Name, y=Extent, group=Year, color=year_factor))+
+  labs(x="Month",
+       y="Sea ice extent 10^6 km^2",
+       title="Monthly minimum sea ice extent from 1978 to 2016")+
+  #use geom_line to visualize trend over time
+  geom_line()+
+  labs(color="Year") +
   scale_color_manual(values = last_ice_pallette[30:69])+
   theme_clean()
 
+ggice2
+
+#same as first graph, but animated
+ggice3 <-ggplot(data=ice2, mapping=aes(x=Month_Name, y=Extent, group=Year, color=Year))+
+  labs(x="Month",
+       y="Sea ice extent 10^6 km^2",
+       title="Monthly minimum sea ice extent from 1978 to 2016")+
+  #use geom_line to visualize trend over time
+  geom_line()+
+  scale_color_gradient(low="gray", high="blue")+
+  theme_clean()+
   transition_reveal(Year) +
   ease_aes("linear")
   
-animate(ice_animate)
+animate(ggice3)
 
 ice_animate
+
+?labs
 
 
 ?transition_states
@@ -193,3 +223,6 @@ ggplot(mtcars, aes(factor(cyl), mpg)) +
   enter_fade() +
   exit_shrink() +
   ease_aes('sine-in-out')
+
+?geom_hline
+

@@ -81,7 +81,7 @@ pen_plot_base <- ggplot(data=penguins,
 pen_plot_base
 
 pen_plot_base+
-  geom_poitn(size=3,
+  geom_point(size=3,
              alpha=0.3)
 
 #geom_jitter - move the points around
