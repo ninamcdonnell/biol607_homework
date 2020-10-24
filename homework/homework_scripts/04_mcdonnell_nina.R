@@ -290,14 +290,14 @@ finally <- Biden_df_long %>%
 finally_above_mean <- Biden_df_long %>% 
   group_by(sim)%>% #for each sim...
   summarize(stats=bootstrapped_poll_stats(value)) %>% 
-  filter(stats$`bootstrapped mean`>49.46842) %>% 
+  filter(stats$`bootstrapped mean`>mean_pct) %>% 
   ungroup()
 
 #filter to mean values less than initial mean
 finally_below_mean <- Biden_df_long %>% 
   group_by(sim)%>% #for each sim...
   summarize(stats=bootstrapped_poll_stats(value)) %>% 
-  filter(stats$`bootstrapped mean`<49.46842) %>% 
+  filter(stats$`bootstrapped mean`<mean_pct) %>% 
   ungroup()
 
 number_above <- length(finally_above_mean$stats$`bootstrapped mean`)
@@ -307,8 +307,8 @@ number_below <- length(finally_below_mean$stats$`bootstrapped mean`)
 #plot 
 finally %>% 
   ggplot(aes(x=stats$`bootstrapped mean`, y=stats$`bootstrapped CI`$whole))+
-  geom_point(aes(color=cut(stats$`bootstrapped mean`, c(-Inf, 49.46842, Inf))))+
-  geom_vline(xintercept=49.46842, color="red", linetype="dotted", size=1.5)+
+  geom_point(aes(color=cut(stats$`bootstrapped mean`, c(-Inf, mean_pct, Inf))))+
+  geom_vline(xintercept=mean_pct, color="red", linetype="dotted", size=1.5)+
   scale_color_manual(name="Boostrapped mean estimate", values=c("blue","purple"), labels=c("< polling average", "> polling average"))+
   labs(x="boostrapped mean (percent)", y="CI of estimate", title= "Boostrapped mean and CI for 1000 simulations \n of Biden's national polling average")+
   theme_bw()

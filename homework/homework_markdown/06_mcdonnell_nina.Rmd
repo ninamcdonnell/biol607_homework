@@ -1,0 +1,260 @@
+---
+title: "BIOL 607 Homework 6"
+author: "Nina McDonnell"
+date: "10/23/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning= FALSE, message = FALSE)
+library(knitr)
+library(tidyr)
+library(mvtnorm)
+library(broom)
+library(ggplot2)
+library(dplyr)
+library(MASS)
+library(profileModel)
+
+set.seed(802)
+
+
+download.file(url="https://biol607.github.io/homework/data/16q11PufferfishMimicry%20Caley%20&%20Schluter%202003.csv", destfile = "PufferfishMimicry.csv")
+```
+
+### 1. Would you say you naturally gravitate towards deductive or inductive inference? Why? 
+
+I naturally gravitate towards deductive inference. This is probably because I am a cautious person, and making inferences about the world at large based on specific examples makes me uneasy (there is too much potential to over-generalize or draw faulty conclusions!). I feel more comfortable evaluating specific examples to see whether or not they support my hypotheses about the world or allow me to reject the null. This view may also have been shaped, in part, by professors who cautioned against inductive inference and suggested strict adherence to Popperian falsification.
+
+### 2. We talked about strictly interpreted Popperian Flasification versus Lakatos’s view of a research program this week.
+
+### 2a. Do you more strongly identify with one of these paradigms? Why? +1 EC for direct quotes (if you want to do some additional reading)
+
+Despite my discomfort with inductive inference, I identify more strongly with Lakatos's view of a research program than strict Popperian Flasification. The end product-- a robust theory based on falsifiable hypotheses-- seems more useful than null hypothesis testing on it's own. A inductive theory or core belief, when well-supported, is critical for turning science and logic into action (transferring information from person to person, informing policy, etc.).
+
+### 2b. How does your own research program fit into one of these paradigms?
+
+My own research program is best aligned with Lakatos's system. Our overarching theory is that amphibian microbial symbionts influence host immunity to fungal pathogens. To arrive at this theory, we use many cases of host immunity and antifungal capacity of skin bacteria to test null hypotheses. The result of all the deductive sub-sections is a broader notion of skin microbiome importance that cannot be directly tested on its own. 
+
+### EC x4 2c. This has been a shallow dive into Lakatos and Popper. Look them or other philosophers of science and inference up - Kuhn, Feyerabend, Musgrave, Deb Mayo, Sabra, Fillies, and others. What’s their core idea, and why do you agree or disagree?
+
+One philosopher who I find very interesting is Bos Van Frassen. He is a modern antirealist who believes that only those phemomena which can be directly observed or logically reasoned are verifiable. Acording to Van Frassen, the only qualification for a theory is that is be empirically adequate. In other words, good theories are not required to be true explanations of things, as long as they supported by results. Much of his writing goes over my head, but I find the antirealist argument that theories about unobservables cannot be "true" to be intriguing. This probably relates back to my skepticism and hesitance to believe that the human brain is capable of compiling true and unbiased explanations of phenomena we cannot directly experience ¯\\_(ツ)_/¯
+
+### 3. Grid Sampling! Based on Friday’s lab, load up the pufferfish data and use grid sampling to find the MLE of the slope, intercept and residual SD of this model. Feel free to eyeball results from an lm() fit to get reasonable values. Try not to do this for a grid of more than ~100K points (more if you want!). It’s ok to be coarse. Compare to lm.
+
+```{r 3}
+#read in data
+puffer <- read.csv("PufferfishMimicry.csv")
+
+#what's here? 
+str(puffer)
+
+#fit model - get slope and intercept
+puffer_model <- lm(resemblance~predators, data= puffer)
+
+#get sd of model residuals
+puffer_residuals <- residuals(puffer_model)
+residual_sd <- sd(puffer_residuals)
+
+#function for likelihood
+norm_lik <- function(m, s){
+  dnorm(samp, mean = m, sd = s, log = FALSE) %>% prod()
+}
+
+#function for log-likelihood
+norm_loglik <- function(m, s){
+  dnorm(samp, mean = m, sd = s, log = TRUE) %>% sum()
+}
+
+#intercept mle (lm value= 0.54) 
+
+#sample based on lm value for intercept
+samp <- rnorm(20, mean=0.54, sd=3)
+
+#data frame
+lik_df_intercept <- tibble(mean = seq(0, 1.5, length.out = 100),
+                      sd= seq(1, 5, length.out = 100)) %>%
+  rowwise(mean) %>%
+  mutate(lik = norm_lik(mean, sd),
+         loglik = norm_loglik(mean, sd)) %>%
+  ungroup()
+
+#plot surface
+ggplot(lik_df_intercept,
+       aes(x = mean, y = lik)) +
+  geom_point()
+
+#get mle
+intercept_mle <- lik_df_intercept %>% 
+  filter(lik==max(lik)) %>% 
+  summarize(mean)%>% 
+  round(digits=2)
+
+intercept_mle
+
+#slope lme (lm value= 0.2)
+
+#sample based on lm value for slope
+samp <- rnorm(20, mean=0.2, sd=3)
+
+#data frame
+lik_df_slope <- tibble(mean = seq(0, .75, length.out = 100),
+                           sd= seq(1, 5, length.out = 100)) %>%
+  rowwise(mean) %>%
+  mutate(lik = norm_lik(mean, sd),
+         loglik = norm_loglik(mean, sd)) %>%
+  ungroup()
+
+#plot surface
+ggplot(lik_df_slope,
+       aes(x = mean, y = lik)) +
+  geom_point()
+
+#get mle
+slope_mle <- lik_df_slope %>% 
+  filter(lik==max(lik)) %>% 
+  summarize(mean)%>% 
+  round(digits=2)
+
+slope_mle
+
+#residual sd mle (lm value= 0.77)
+
+#sample based on residual sd from lm
+samp <- rnorm(20, mean=0.77, sd=3)
+
+#data frame
+lik_df_residual_sd <- tibble(mean = seq(.5, 1.5, length.out = 100),
+                           sd= seq(1, 5, length.out = 100)) %>%
+  rowwise(mean) %>%
+  mutate(lik = norm_lik(mean, sd),
+         loglik = norm_loglik(mean, sd)) %>%
+  ungroup()
+
+#plot surface
+ggplot(lik_df_residual_sd,
+       aes(x = mean, y = lik)) +
+  geom_point()
+
+#get mle
+residual_sd_mle <- lik_df_residual_sd %>% 
+  filter(lik==max(lik)) %>% 
+  summarize(mean) %>% 
+  round(digits=2)
+
+residual_sd_mle
+
+```
+
+<span style="color: red;"> MLE values are overall close to the values from the lm. The MLE for the intercept is `r intercept_mle`, for the slope it is `r slope_mle`, and for the residual SD it is `r residual_sd_mle`. The lm has an intercept of 0.54, a slope of 0.20, and residual SD of 0.77. </span> 
+
+### 4. Surfaces! Filter the dataset to the MLE of the SD. Plot the surface for the slope and intercept in whatever way you find most compelling. You might want to play around with zooming in to different regions, etc. Have fun!
+
+```{r 4}
+#log-likelihood surface
+
+?dnorm #use residual_sd for SD argument (?)
+
+#make function for loglik surface
+puffer_loglik_suface <- function(slope, int){
+  y <- puffer$resemblance * slope + int
+  #dnorm(vector of quantiles, mean, sd)
+  sum(dnorm(y, mean=puffer$predators, sd=residual_sd)) 
+}
+#crop to section with greatest lik
+grid <- crossing(int = seq(-5,10, length.out = 200),
+                  slope = seq(0,3.5, length.out = 200)) %>%
+  rowwise(slope, int) %>%
+  mutate(logLik = puffer_loglik_suface(slope, int)) %>%
+  ungroup()
+ll_plot_reg <- ggplot(data = grid,
+                      aes(x = slope, y = int, fill = logLik)) +
+  geom_raster() +
+  scale_fill_viridis_c(option = "A")
+
+ll_plot_reg
+
+```
+
+### 5. GLM! Now, compare those results to results from glm. Show the profiles and confidence intervals from glm() for the slope and intercept. Also show how you validate assumptions.
+
+<span style="color: red;">The values for slope (0.20), intercept (0.54), and residual SD (0.77) of the glm are the same as the lm. </span> 
+
+```{r 5}
+
+#fit glm
+puffer_glm <- glm(resemblance~predators, data= puffer,
+                  family=gaussian(link="identity"))
+
+residual_sd_glm <- residuals(puffer_glm) %>% 
+  sd()
+  
+#check profiles
+
+#profiles for slope and intercept look as they should: the ordinary deviance forms a parabola with the lowest point at the slope/intercept value. The plots of tau are straight lines with the slope/intercept value in the middle. 
+
+#ordinary deviance
+prof <- profileModel(puffer_glm,
+                     objective = "ordinaryDeviance")
+
+plot(prof, print.grid.points = TRUE) #good parabola
+
+#tau
+prof_predators <- profile(puffer_glm)
+plot(prof_predators) #good straight line
+
+#confidence interval - slope for predators does not cross 0!
+confint(prof_predators)
+
+#Test linear regression assumptions: 
+# 1. Does dist of predictions match the data? 
+# 2. Is there a relationship between fitted and residual values?
+# 3. Did we satisfy normality and homoscedasticity? 
+# 4. look for outliers with leverage 
+
+#1. check simulations against observed -> looks fine
+model_sims <- simulate(puffer_glm, nsim = 100) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "sim",
+    values_to = "predator"
+  )
+ggplot() +
+  geom_density(data = model_sims,
+               mapping = aes(x = predator, group = sim), 
+               size = 0.2)  +
+  geom_density(data = model_sims,
+               mapping = aes(x = predator),
+               size = 2, color = "blue")
+
+#2.Is there a relationship between fitted and residual values?
+plot(puffer_glm, which = 1) #looks good, no relationship, apparent homoscedasticity
+
+#3. Did we satisfy normality and homoscedasticity? 
+
+#relationship appears linear from scatterplot 
+ggplot(data= puffer, mapping=aes(x=resemblance, y=predators))+
+  geom_point()+
+  theme_bw()
+
+#qq plot 
+plot(puffer_glm, which = 2) #looks good, approximately on the line
+
+#histogram of residuals
+hist(residuals(puffer_glm)) #looks roughly normal
+
+#Shapiro-wilks test
+shapiro.test(residuals(puffer_glm)) #passes normality test
+
+# 4. look for outliers with leverage 
+plot(puffer_glm, which = 4) 
+plot(puffer_glm, which = 5) #looks good, no high-leverage outliers
+
+```
+
+
+## <span style="color: red;">*Extra credit:* submitted via GitHub.</span>
+### <span style="color: red;">Repository: https://github.com/ninamcdonnell/biol607_mcdonnell/tree/master/homework/homework_markdown
+</span>
