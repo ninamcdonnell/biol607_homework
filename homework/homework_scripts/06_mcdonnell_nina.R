@@ -186,3 +186,15 @@ confint(prof_predators)
 ?bbmle::mle2 #estimates parameters using maxlik
 
 puffer_mle2 <- bbmle::mle2(minuslog1, start=list(slope = 2, intercept = 5, resid_sd = 2), data=puffer)
+
+
+
+#let's make our likelihood surface!
+lik_df_norm <- crossing(m = seq(10, 20, length.out = 300),
+                        s = seq(1, 5, length.out = 300),
+                        ) %>%
+  group_by(m, s) %>%
+  mutate(lik = norm_lik(m, s),
+         loglik = norm_loglik(m,s),
+         deviance = -2 * loglik) %>%
+  ungroup

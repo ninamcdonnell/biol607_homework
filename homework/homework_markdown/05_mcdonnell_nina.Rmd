@@ -418,7 +418,7 @@ The outer pair of lines mark the prediction interval. This interval represents t
 
 #fit confidence interval
 teeth_ci <- predict(teeth_model,
-                    interval="confidence") %>% 
+                    interval="confidence") %>%
   as_tibble() %>% 
   rename(lwr_ci = lwr,
          upr_ci = upr)

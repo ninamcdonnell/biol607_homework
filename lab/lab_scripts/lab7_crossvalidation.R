@@ -37,7 +37,7 @@ roach_int_no_15 <- lm(rate~1, data=roaches_no_15) #null model
 rmse(model= roach_lm_no_15, data= roaches_15)
 rmse(model= roach_int_no_15, data= roaches_15) #The SD of the predictions is much greater in the null model
 
-#K-fold cross vaidation ####
+#K-fold cross validation ####
 
 #make a folded dataset object  GET EC FOR FINDING OUT WHY ITS CALLED VFOLD
 roach_five_fold <- vfold_cv(roaches, v=5) #makes five "list-columns"
@@ -119,8 +119,29 @@ roach_glm <- glm(rate~temperature, data= roaches,
 loo_roach <- cv.glm(data= roaches,
                     glmfit = roach_glm,
                     K=nrow(roaches))
-#what is our LOO CV score (mse)
+
+#what is our LOO CV score (mse)?
 loo_roach$delta[1] %>% 
   sqrt() #rmse - only valid for identity link- for others, use mse
 
+#AIC ####
+
+roach_lm <- lm(rate~temperature, data=roaches)
+roach_int <- lm(rate~1, data=roaches)
+roach_sq <- lm(rate~ poly(temperature, 2), data=roaches)
+roach_cub <- lm(rate~ poly(temperature, 3), data=roaches)
+
+AIC(roach_lm)
+AIC(roach_int)
+
+library(VGAM)
+library(AICcmodavg)
+
+mod_list <- list(roach_lm,roach_int,roach_sq, roach_cub)
+name_vec <- c("linear", "int", "quad", "cube")
+
+aictab(cand.set = mod_list, modnames = name_vec)
+
+#what are coefs?
+broom::tidy(roach_cub)
 
