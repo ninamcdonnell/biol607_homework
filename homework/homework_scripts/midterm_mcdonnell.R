@@ -92,7 +92,7 @@ single_state_plot<- function(state){
   return(plot)}
 
 #single state plot
-ND_plot <- single_state_plot("North Dakota")
+RI_plot <- single_state_plot("Rhode Island")
 
 #try to get legend into this... ------------
 single_state_plot<- function(state){

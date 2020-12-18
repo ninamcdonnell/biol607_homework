@@ -53,6 +53,7 @@ roach_five_fold <- roach_five_fold %>% #start with our tibble
                        data= analysis(.x)))) #.x is a standin for every element of the splits
 
 roach_five_fold #now there is another list that includes the models
+str(roach_five_fold)
 
 #extract the out-of-sample RMSE for each model at each fold, usinh function map2()
 

@@ -1,0 +1,303 @@
+---
+title: "BIOL 607 Homework 8"
+author: "Nina McDonnell"
+date: "Dec 2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning= FALSE, message = FALSE)
+
+#libraries
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(car) 
+library(emmeans)
+library(brms)
+library(bayesplot)
+library(loo)
+library(ggdist)
+library(tidybayes)
+
+set.seed(802)
+```
+
+### 1. Comparing Means
+
+# To start with, let’s warm up with a simple one-way ANOVA model. This example, from Whitlock and Schluter chapter 15 question 22 looks at the mass of lodgepole pinecones from different habitats.
+
+# 1.1. Load and plot the data. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
+
+```{r 1.1}
+#read in data
+pines <- read.csv(file="https://www.zoology.ubc.ca/~whitlock/ABD/teaching/datasets/15/15q22LodgepolePineCones.csv")
+
+#what's here?
+#str(pines)
+
+#plot cone mass
+ggplot(pines, aes(x=habitat, y=conemass, fill=habitat))+
+  geom_violin(trim=FALSE,alpha=0.8)+
+  geom_point(position= position_jitterdodge())+
+  geom_boxplot(fill="white", width=.15, alpha=0.8)+
+  scale_fill_manual(values=c("forestgreen", "saddlebrown", "yellowgreen"))+
+  labs(x="habitat", y="cone mass", title="Lodgepole pine cone mass by habitat")+
+  theme_minimal()
+```
+
+# 1.2 Fit a model using least squares and evaluate all relevant assumptions. List them out as you test them. Can we use this model? If not, fix it. But if we can, no fix is needed!
+
+```{r 1.2.1}
+
+pines_lm <- lm(conemass~habitat, data=pines)
+
+# check assumptions
+plot(pines_lm, which = 1)
+plot(pines_lm, which = 2)
+shapiro.test(residuals(pines_lm))
+
+plot(pines_lm, which = 4)
+plot(pines_lm, which = 5)
+
+#add residuals to our data frame
+pines <- pines %>%
+  modelr::add_residuals(pines_lm)
+
+#plotting residuals by group with car
+ggplot(pines,
+       aes(x = habitat, y = resid)) +
+  geom_boxplot()
+
+#check for HOV
+car::leveneTest(pines_lm)
+
+# Let's evaluate our model! ####
+anova(pines_lm)
+
+# car::Anova
+car::Anova(pines_lm, Type="II")
+
+```
+### LIST OUT ASSUMPTIONS AND WRITE INTERPRETATION
+
+# 1.2 How much variation is explained by your model?
+
+```{r 1.2.2}
+
+#see R2
+summary(pines_lm)
+
+```
+
+**The adjusted R-squared value is 0.86, so the model explains 0.86 of the variation**
+
+# 1.3 Show which means are different from each other. Are you correcting p-values? If so, how, and justify your choice.
+
+``` {r 1.3}
+
+#contrast means between habitats
+pines_em <- emmeans(pines_lm, ~habitat)
+
+contrast(pines_em,
+         method = "tukey", adjust="bonferroni") 
+#island.absent - island.present and island.absent - mainland.present were significantly different
+
+```
+**Yes, I added a bonferroni correction to lower the chance of false discovery arising from multiple comparisons at once. This correction may be conservative but since there are only three comparisons being made it probably won't make much of a difference.**
+
+### 2. Comparing Means from Multiple Categories
+
+#In a study from Rogers et al. (2020) link, the authors performed an experiment where they moved panels that had been colonized by invertebrates on a dock to a nearby rocky jetty where predators could access panels. To separate out the effects of changes in abiotic environment versus predation, they performed a factorial experiment, either caging or not caging panels and placing them either on the side of a cinder block or hanging on a piece of PVC attached to the block where predators would have little access (but weren’t entirely stopped). They then looked at change in total cover of invertebrates. Using this old data file dug off of my hard drive, let’s see what they found.
+
+# 2.1. Load and plot the data. We are interested in change in percent cover. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
+
+```{r 2.1}
+#read in data
+cover <- read.csv(file="homework/homework_data/fouling_transplant_data.csv") %>% 
+  janitor::clean_names()
+#str(cover)
+
+#plot change in percent cover for caged/open and position on block
+ggplot(data=cover, 
+       mapping=aes(y=change_in_cover, x=caged, fill=position_on_block)) +
+  geom_boxplot(width=0.9, position=position_dodge(width=1))+
+  scale_fill_manual(values=c("coral1","seagreen2"))+
+  labs(y="change in percent cover", x= NULL, fill="position on block")+
+  theme_bw()
+```
+
+# 2.2 Fit a model using likelihood and evaluate all relevant assumptions. Do you meet assumptions?
+
+```{r 2.2}
+
+cover_glm <- glm(change_in_cover~caged*position_on_block, data=cover, family = gaussian(link="identity"))
+
+# check assumptions
+plot(cover_glm, which = 1) #bad
+plot(cover_glm, which = 2) #bad
+shapiro.test(residuals(cover_glm)) #bad
+
+plot(cover_glm, which = 4)
+
+#add residuals to our data frame
+cover <- cover %>%
+  modelr::add_residuals(cover_glm)
+
+#plotting residuals by group -- unequal variance
+ggplot(cover,
+       aes(x = caged, y = resid)) +
+  geom_boxplot()
+
+ggplot(cover,
+       aes(x = position_on_block, y = resid)) +
+  geom_boxplot()
+
+ggplot(cover,
+       aes(x = caged, y = resid, fill= position_on_block)) +
+  geom_boxplot()
+
+#check for HOV
+car::leveneTest(cover_glm)
+
+```
+
+# 2.3 If you answered yes to the above…. you are wrong. It doesn’t! Percentage data is weird. Difference in percentages can be ever weirder! There are three tried and true solutions here. But they MIGHT not all work.
+
+# Incorporate initial cover as a covariate. This takes out that influence, and as such we’re looking at residuals of change. This sometimes, but not always, works.
+
+# Divide change by initial cover to express change as percent change relative to initial cover.
+
+# Calculate difference in logit cover (so, logist(initial cover) - logit(final cover)). Logit transformations linearize percent cover data, and are often all that is needed to work percent cover into a linear model. You can use car::logit() for this.
+
+# Try all three methods. Which one works so that you can produce valid inference?
+
+```{r 2.3}
+#1 - initial cover plus change
+cover1 <- cover %>% 
+  mutate(initial_plus_change=change_in_cover+initial_cover)
+
+cover_glm_1 <- glm(initial_plus_change~caged*position_on_block, data=cover, family = gaussian(link="identity"))
+summary(cover_glm)
+
+#check assumptions
+plot(cover_glm_1, which = 1) 
+plot(cover_glm_1, which = 2) # not great, better than 2
+plot(cover_glm_1, which = 3)
+plot(cover_glm_1, which = 4)
+
+#2 - add relative percent change to df
+cover2 <- cover %>% 
+  mutate(percent_change_relative=change_in_cover/initial_cover)
+
+cover_glm_2 <- glm(percent_change_relative~caged*position_on_block, data=cover2, family = gaussian(link="identity"))
+summary(cover_glm)
+
+#check assumptions
+plot(cover_glm_2, which = 1) # variance is not equal
+plot(cover_glm_2, which = 2) # diverges from normal line
+plot(cover_glm_2, which = 3)
+plot(cover_glm_2, which = 4)
+
+#3 - add dif_logit cover to df
+cover3 <- cover2 %>% 
+  mutate(dif_logit_cover=logit(initial_cover) - logit(final_cover))
+
+cover_glm_3 <- glm(dif_logit_cover~caged*position_on_block, data=cover3, family = gaussian(link="identity"))
+summary(cover_glm)
+
+#assumptions
+plot(cover_glm_3, which = 1) # horrible
+plot(cover_glm_3, which = 2) # horrible
+plot(cover_glm_3, which = 3)
+plot(cover_glm_3, which = 4) 
+
+#going with model 1 because it best meets assumptions
+
+```
+
+**The first model (initial cover + change in cover) works best to produce valid inference and violates the fewest assumptions.**
+
+# 2.4 Great! So, take us home! Using NHST with an alpha of 0.08 (why not), what does this fit model tell you about whether predation matters given how I have described the system? Feel free to replot the data or fit model results if helpful
+
+``` {r 2.4}
+summary(cover_glm) #nothing is significant
+
+#re-plot data using initial_plus_change cover
+ggplot(data=cover, 
+       mapping=aes(y=initial_plus_change, x=caged, fill=position_on_block)) +
+  geom_boxplot(width=0.9, position=position_dodge(width=1))+
+  scale_fill_manual(values=c("coral1","seagreen2"))+
+  labs(y="change in percent cover", x= NULL, fill="position on block")+
+  theme_bw()
+
+```
+
+### 3. Comparing Means with Covariates
+
+# We will wrap up with a model mixing continuous and discrete variables. In this dataset from Scantlebury et al, the authors explored how caste and mass affected the energy level of naked mole rats.
+
+# 3.1 OK, you know what you are about at this point. Load in the data, plot it, fit it, check assumptions. Use Bayes for this.
+
+```{r 3.1}
+#check distrubution
+hist(rats$lnenergy)
+shapiro.test(rats$lnenergy)
+
+#check distrubution
+hist(rats$lnmass)
+shapiro.test(rats$lnmass)
+
+#lnenergy ~ caste
+ggplot(rats, aes(x=caste, y=lnenergy, color=caste))+
+  geom_point(position=position_jitter(width=0.2))
+
+#lnenergy ~ lnmass
+ggplot(rats, aes(x=lnmass, y=lnenergy))+
+  geom_point()
+
+#interaction
+rat_brm <- brm(lnenergy~lnmass*caste, data=rats, family=gaussian(link="identity"))
+
+#additive 
+rat_brm2 <- brm(lnenergy~lnmass+caste, data=rats, family=gaussian(link="identity"))
+
+```
+### CHECK ASSUMPTIONS
+
+# 3.2 Examine whether there is an interaction or not using LOO cross-validation. Is a model with an interaction more predictive?
+
+```{r 3.2}
+#interaction
+
+seal_loo <- loo(rat_brm) #Leave one out inference
+seal_loo
+
+#additive - more predictive!
+
+seal_loo <- loo(rat_brm2) #Leave one out inference
+seal_loo
+```
+
+**The model without the interaction is more predictive**
+
+# 3.3 Compare the two castes energy expendeture at the meanlevel of log mass. Are they different? How would you discuss your conclusions.
+
+```{r 3.3}
+
+```
+### GET HELP
+
+# 3.4 Plot the fit model. Use tidybayes and ggdist with your model to show fit and credible intervals with the raw data points on top. modelr::data.grid() might help as well.
+
+```{r 3.4}
+
+```
+####GET HELP
+
+## <span style="color: red;">*Extra credit:* submitted via GitHub.</span>
+### <span style="color: red;">Repository: https://github.com/ninamcdonnell/biol607_mcdonnell/tree/master/homework/homework_markdown
+</span>

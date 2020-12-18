@@ -150,7 +150,8 @@ bootstrapped_mean_ci_bias <- function(x){   #for vector x...
 
 #4a. Download and look at the data. Is it long or wide? - Data are long
 
-pres_polls <- read.csv("homework/homework_data/president_polls.csv")
+pres_polls <- read.csv("homework/homework_data/president_polls.csv") %>% 
+  janitor()
 
 str(pres_polls) #variable classes are all jumbled up. Make sure to mutate them to the appropriate classes before use
 miss_var_summary(pres_polls) #summarizes NA data from large data sets. 
