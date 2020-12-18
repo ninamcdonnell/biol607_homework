@@ -26,19 +26,6 @@ library(reticulate)
 
 set.seed(802)
 
-MorphRawData <-read.csv(file ="https://raw.githubusercontent.com/ninamcdonnell/ribbit/master/2019_2020_combined_metamorph_raw_data.csv") #includes NA values
-str(MorphRawData)
-
-metamorph <- MorphRawData%>%
-  mutate(treatment=as.factor(treatment))%>%
-  mutate(mesocosm = as.factor(mesocosm))%>%
-  mutate(year=as.factor(year)) %>% 
-  mutate(body_condition=mass/svl)%>%
-  rename(day=metamorph_day) %>% 
-  rename(mass=mass)%>%
-  rename(svl=svl)%>%
-  mutate(BodyCondition=mass/svl)
-
 ```
 
 ### Question 1: Create models with different polys
@@ -47,7 +34,7 @@ Let’s first look at the data. Plot it, along with a polynomial fit (remember, 
 
 ```{r 1}
 #read in data
-progesterone_data <- read.csv("homework/homework_data/chap17q07ProgesteroneExercise.csv")
+progesterone_data <- read.csv("chap17q07ProgesteroneExercise.csv")
 
 #what's here
 str(progesterone_data)
@@ -107,11 +94,11 @@ C. Great! Now, calculate the rmse for each fold/polynomial combination as we did
 ```{r 2c}
 
 #add rmse to data frame
-model_df <- model_df %>% 
-  mutate(rmse = map2_dbl(splits, 
-                         mods, #for each split and mod, calculate...
-                         ~rmse(model = .y, #rmse of model .y from data .x
-                               data=assessment(.x))))
+#model_df <- model_df %>% 
+  #mutate(rmse = map2_dbl(splits, 
+                         #mods, #for each split and mod, calculate...
+                        #~rmse(model = .y, #rmse of model .y from data .x
+                              # data=assessment(.x))))
 
 # we looked at this during office hours and could not figure out why the code wasnt working
 ```
@@ -122,18 +109,18 @@ D. Implications - ok, given that the 5-fold score is the average RMSE across all
 #coded out what this would be if 2c was working:
 
 # calculate mean rmse for each polymomial
-rmse_table<- model_df %>% 
-  select(poly, rmse)
-  group_by(poly) %>% 
-  summarize(mean_rmse=mean(rmse),
-            sd_rmse=sd(rmse)) %>% 
+#rmse_table<- model_df %>% 
+ # select(poly, rmse)
+ # group_by(poly) %>% 
+ # summarize(mean_rmse=mean(rmse),
+          #  sd_rmse=sd(rmse)) %>% 
     #make a table
-    as.table() 
+  #  as.table() 
 
 #plot rmse by model
-rmse_plot <- model_df %>% 
-  ggplot(aes(x=poly, y=rmse))+
-  geom_boxplot()
+#rmse_plot <- model_df %>% 
+  #ggplot(aes(x=poly, y=rmse))+
+  #geom_boxplot()
 
 ```
 
@@ -218,8 +205,14 @@ bayes_fn(m=200, s=30)
 D. Great! Now use this function with your sample grid to get the numerator of the posterior, and then standardize with the p(D) - the sum of all numerators - to get a full posterior. Note, as we’re working in logs, we just subtract log(p(D)) What is the modal estimate of each parameter? How do they compare to the standard frequentist estimate?
 
 ``` {r 5d}
+#new df with fn for posterior
+post_df <- lik_df %>% 
+  rowwise(mean) %>% 
+  mutate(lik = bayes_fn(mean, sd)+mean) %>%
+  ungroup()
 
 ```
+**The values look similar to the frequentist estimate**
 
 ### Question 6: Final Project Thinking
 
@@ -227,25 +220,25 @@ We’re at the half-way point in the course, and after the mid-term, it’s time
 
 A. What is the dataset you are thinking of working with? Tell me a bit about what’s in it, and where it comes from.
 
-**I am thinking of exploring a leopard frog morphometric dataset I collected over the past two summers. I have data on mass, body length, and time to metamorphosis (larval period) of indiviuals from 5 different community treatments (15 outdoor mesocosms, 3 replicates/treatment, total of 300 individuals). These data will be used to calculate body condition, and ultimately correlated with disease metrics, but disease diagnostics and immune sample processing will not be finished for a while. For now, my goal is to build a model to test for treatment differences in mass, larval period, and body condition between prescribed communities, which can later be modified to incorporate disease variables. Tadpole density was held constant while manipulating community, but disease was not examined separately from community structure, so differences represent total effects of interspecies host interactions plus host-mediated disease effects**
+**I am thinking of exploring a leopard frog morphometric dataset I collected over the past two summers. I have data on mass, body length, and time to metamorphosis (larval period) of indiviuals from 5 different community treatments (15 outdoor mesocosms, 3 replicates/treatment, total of 300 individuals). These data will be used to calculate body condition, and ultimately correlated with disease metrics, but disease diagnostics and immune sample processing will not be finished for a while. For now, my goal is to build a model to test for treatment differences in mass, larval period, and body condition between prescribed communities, which can later be modified to incorporate disease variables. Tadpole density was held constant while manipulating community, but disease was not examined separately from community structure, so differences represent total effects of interspecies host interactions plus any disease effects**
 
 B. What question do you want to ask of that data set?
 
 **1. Do mass, body condition, or larval period differ significantly with study year or treatment?**
 **2. Does the effect of treatment differ with study year (is there an interaction)?**
-**3. Do mass, body condition, and larval period exhibit collinearity? For later: How do these qualities vary in their strength of association with disease?**
+**3. Is there a relationship between metamorph mass and growth duration?**
 
 EC C. Wanna make a quick visualization of some aspect of the data that might be provocative and interesting?
 
-```{python}
+```{python} 
+#this doesn't run in markdown, but it's a 3-d plot of all the response variables and it can spin! There is a picture of it in dropbox in case it still counts.
 
-fig <- plot_ly(metamorph, x = ~day, y = ~body_condition, z = ~mass,color = ~year, colors="Dark2") %>% 
-  add_markers() %>% 
-  layout(scene = list(xaxis = list(title = "Days to metamorphosis"),
-                                   yaxis = list(title = "Body condition (g/mm)"),
-                                   zaxis = list(title = "Mass, g")))
+#fig <- plot_ly(metamorph, x = ~day, y = ~body_condition, z = ~mass,color = #~year, colors="Dark2") %>% 
+#  add_markers() %>% 
+#  layout(scene = list(xaxis = list(title = "Days to metamorphosis"),
+#                                   yaxis = list(title = "Body condition #(g/mm)"),
+#                                   zaxis = list(title = "Mass, g")))
 ```
-
 
 
 ## <span style="color: red;">*Extra credit:* submitted via GitHub.</span>

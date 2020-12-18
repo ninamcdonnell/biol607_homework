@@ -28,9 +28,9 @@ set.seed(802)
 
 ### 1. Comparing Means
 
-# To start with, let’s warm up with a simple one-way ANOVA model. This example, from Whitlock and Schluter chapter 15 question 22 looks at the mass of lodgepole pinecones from different habitats.
+### To start with, let’s warm up with a simple one-way ANOVA model. This example, from Whitlock and Schluter chapter 15 question 22 looks at the mass of lodgepole pinecones from different habitats.
 
-# 1.1. Load and plot the data. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
+### 1.1. Load and plot the data. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
 
 ```{r 1.1}
 #read in data
@@ -49,18 +49,18 @@ ggplot(pines, aes(x=habitat, y=conemass, fill=habitat))+
   theme_minimal()
 ```
 
-# 1.2 Fit a model using least squares and evaluate all relevant assumptions. List them out as you test them. Can we use this model? If not, fix it. But if we can, no fix is needed!
+### 1.2 Fit a model using least squares and evaluate all relevant assumptions. List them out as you test them. Can we use this model? If not, fix it. But if we can, no fix is needed!
 
 ```{r 1.2.1}
 
 pines_lm <- lm(conemass~habitat, data=pines)
 
 # check assumptions
-plot(pines_lm, which = 1)
-plot(pines_lm, which = 2)
-shapiro.test(residuals(pines_lm))
+plot(pines_lm, which = 1) #qqplot follows a straight line- it has normal dist
+plot(pines_lm, which = 2) # no clear relationship between fitted and residuals (equal variance of errors)
+shapiro.test(residuals(pines_lm)) #passes residual normality test
 
-plot(pines_lm, which = 4)
+plot(pines_lm, which = 4) #no strong outliers
 plot(pines_lm, which = 5)
 
 #add residuals to our data frame
@@ -72,19 +72,19 @@ ggplot(pines,
        aes(x = habitat, y = resid)) +
   geom_boxplot()
 
-#check for HOV
+#check for HOV - looks good
 car::leveneTest(pines_lm)
 
-# Let's evaluate our model! ####
+#evaluate model! 
 anova(pines_lm)
 
 # car::Anova
 car::Anova(pines_lm, Type="II")
 
 ```
-### LIST OUT ASSUMPTIONS AND WRITE INTERPRETATION
+**The model meets all the assumptions**
 
-# 1.2 How much variation is explained by your model?
+### 1.2 How much variation is explained by your model?
 
 ```{r 1.2.2}
 
@@ -95,7 +95,7 @@ summary(pines_lm)
 
 **The adjusted R-squared value is 0.86, so the model explains 0.86 of the variation**
 
-# 1.3 Show which means are different from each other. Are you correcting p-values? If so, how, and justify your choice.
+### 1.3 Show which means are different from each other. Are you correcting p-values? If so, how, and justify your choice.
 
 ``` {r 1.3}
 
@@ -111,13 +111,13 @@ contrast(pines_em,
 
 ### 2. Comparing Means from Multiple Categories
 
-#In a study from Rogers et al. (2020) link, the authors performed an experiment where they moved panels that had been colonized by invertebrates on a dock to a nearby rocky jetty where predators could access panels. To separate out the effects of changes in abiotic environment versus predation, they performed a factorial experiment, either caging or not caging panels and placing them either on the side of a cinder block or hanging on a piece of PVC attached to the block where predators would have little access (but weren’t entirely stopped). They then looked at change in total cover of invertebrates. Using this old data file dug off of my hard drive, let’s see what they found.
+### In a study from Rogers et al. (2020) link, the authors performed an experiment where they moved panels that had been colonized by invertebrates on a dock to a nearby rocky jetty where predators could access panels. To separate out the effects of changes in abiotic environment versus predation, they performed a factorial experiment, either caging or not caging panels and placing them either on the side of a cinder block or hanging on a piece of PVC attached to the block where predators would have little access (but weren’t entirely stopped). They then looked at change in total cover of invertebrates. Using this old data file dug off of my hard drive, let’s see what they found.
 
-# 2.1. Load and plot the data. We are interested in change in percent cover. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
+### 2.1. Load and plot the data. We are interested in change in percent cover. Choose a plot that not only shows the raw data, but also the means and SE or CI of those means. +1 EC if Michael thinks it’s fancy.
 
 ```{r 2.1}
 #read in data
-cover <- read.csv(file="homework/homework_data/fouling_transplant_data.csv") %>% 
+cover <- read.csv(file="fouling_transplant_data.csv") %>% 
   janitor::clean_names()
 #str(cover)
 
@@ -130,7 +130,7 @@ ggplot(data=cover,
   theme_bw()
 ```
 
-# 2.2 Fit a model using likelihood and evaluate all relevant assumptions. Do you meet assumptions?
+### 2.2 Fit a model using likelihood and evaluate all relevant assumptions. Do you meet assumptions?
 
 ```{r 2.2}
 
@@ -165,22 +165,22 @@ car::leveneTest(cover_glm)
 
 ```
 
-# 2.3 If you answered yes to the above…. you are wrong. It doesn’t! Percentage data is weird. Difference in percentages can be ever weirder! There are three tried and true solutions here. But they MIGHT not all work.
+### 2.3 If you answered yes to the above…. you are wrong. It doesn’t! Percentage data is weird. Difference in percentages can be ever weirder! There are three tried and true solutions here. But they MIGHT not all work.
 
-# Incorporate initial cover as a covariate. This takes out that influence, and as such we’re looking at residuals of change. This sometimes, but not always, works.
+### Incorporate initial cover as a covariate. This takes out that influence, and as such we’re looking at residuals of change. This sometimes, but not always, works.
 
-# Divide change by initial cover to express change as percent change relative to initial cover.
+### Divide change by initial cover to express change as percent change relative to initial cover.
 
-# Calculate difference in logit cover (so, logist(initial cover) - logit(final cover)). Logit transformations linearize percent cover data, and are often all that is needed to work percent cover into a linear model. You can use car::logit() for this.
+### Calculate difference in logit cover (so, logist(initial cover) - logit(final cover)). Logit transformations linearize percent cover data, and are often all that is needed to work percent cover into a linear model. You can use car::logit() for this.
 
-# Try all three methods. Which one works so that you can produce valid inference?
+### Try all three methods. Which one works so that you can produce valid inference?
 
 ```{r 2.3}
 #1 - initial cover plus change
 cover1 <- cover %>% 
   mutate(initial_plus_change=change_in_cover+initial_cover)
 
-cover_glm_1 <- glm(initial_plus_change~caged*position_on_block, data=cover, family = gaussian(link="identity"))
+cover_glm_1 <- glm(initial_plus_change~caged*position_on_block, data=cover1, family = gaussian(link="identity"))
 summary(cover_glm)
 
 #check assumptions
@@ -221,13 +221,13 @@ plot(cover_glm_3, which = 4)
 
 **The first model (initial cover + change in cover) works best to produce valid inference and violates the fewest assumptions.**
 
-# 2.4 Great! So, take us home! Using NHST with an alpha of 0.08 (why not), what does this fit model tell you about whether predation matters given how I have described the system? Feel free to replot the data or fit model results if helpful
+### 2.4 Great! So, take us home! Using NHST with an alpha of 0.08 (why not), what does this fit model tell you about whether predation matters given how I have described the system? Feel free to replot the data or fit model results if helpful
 
 ``` {r 2.4}
 summary(cover_glm) #nothing is significant
 
 #re-plot data using initial_plus_change cover
-ggplot(data=cover, 
+ggplot(data=cover1, 
        mapping=aes(y=initial_plus_change, x=caged, fill=position_on_block)) +
   geom_boxplot(width=0.9, position=position_dodge(width=1))+
   scale_fill_manual(values=c("coral1","seagreen2"))+
@@ -238,11 +238,15 @@ ggplot(data=cover,
 
 ### 3. Comparing Means with Covariates
 
-# We will wrap up with a model mixing continuous and discrete variables. In this dataset from Scantlebury et al, the authors explored how caste and mass affected the energy level of naked mole rats.
+### We will wrap up with a model mixing continuous and discrete variables. In this dataset from Scantlebury et al, the authors explored how caste and mass affected the energy level of naked mole rats.
 
-# 3.1 OK, you know what you are about at this point. Load in the data, plot it, fit it, check assumptions. Use Bayes for this.
+### 3.1 OK, you know what you are about at this point. Load in the data, plot it, fit it, check assumptions. Use Bayes for this.
 
 ```{r 3.1}
+#read in data
+rats <- read.csv(file="https://www.zoology.ubc.ca/~whitlock/ABD/teaching/datasets/18/18e4MoleRatLayabouts.csv")
+
+#str(rats)
 #check distrubution
 hist(rats$lnenergy)
 shapiro.test(rats$lnenergy)
@@ -265,10 +269,53 @@ rat_brm <- brm(lnenergy~lnmass*caste, data=rats, family=gaussian(link="identity"
 #additive 
 rat_brm2 <- brm(lnenergy~lnmass+caste, data=rats, family=gaussian(link="identity"))
 
-```
-### CHECK ASSUMPTIONS
+# visually investigate our chains - they all match up
 
-# 3.2 Examine whether there is an interaction or not using LOO cross-validation. Is a model with an interaction more predictive?
+plot(rat_brm) 
+plot(rat_brm2) 
+
+#look at diagnostic of convergence - Gelman_Rubin statistic- Rhat - looks good
+
+rhat(rat_brm)
+rhat(rat_brm2)
+
+rhat(rat_brm) %>% mcmc_rhat()
+rhat(rat_brm2) %>% mcmc_rhat()
+
+#assess autocorrelation - looks good
+
+mcmc_acf(rat_brm) 
+mcmc_acf(rat_brm2) 
+
+#check the match between out data and our chains for dist of y - looks alright
+pp_check(rat_brm, "dens_overlay")
+pp_check(rat_brm2, "dens_overlay")
+
+#is our error normal?
+pp_check(rat_brm, "error_hist", bins=10) #sort of normal
+pp_check(rat_brm2, "error_hist", bins=10) #sort of normal
+
+#see fitted vs residuals
+
+rat_res <- residuals(rat_brm) %>%  #first get residuals
+  as_tibble #make df
+
+rat_fit <- fitted(rat_brm) %>% #then get fitted values
+  as_tibble
+
+plot(y=rat_res$Estimate, x=rat_fit$Estimate) # looks good
+
+rat_res2 <- residuals(rat_brm2) %>%  #first get residuals
+  as_tibble #make df
+
+rat_fit2 <- fitted(rat_brm2) %>% #then get fitted values
+  as_tibble
+
+plot(y=rat_res2$Estimate, x=rat_fit2$Estimate) # looks good
+
+```
+
+### 3.2 Examine whether there is an interaction or not using LOO cross-validation. Is a model with an interaction more predictive?
 
 ```{r 3.2}
 #interaction
@@ -284,19 +331,35 @@ seal_loo
 
 **The model without the interaction is more predictive**
 
-# 3.3 Compare the two castes energy expendeture at the meanlevel of log mass. Are they different? How would you discuss your conclusions.
+### 3.3 Compare the two castes energy expendeture at the meanlevel of log mass. Are they different? How would you discuss your conclusions.
 
 ```{r 3.3}
+rat_em <- emmeans(rat_brm2, ~caste)
+contrast(rat_em,
+         method = "tukey", adjust="bonferroni")
 
+contrast(emmeans(rat_brm2, ~caste), method="tukey") %>% 
+  plot()+geom_vline(xintercept=0)
 ```
-### GET HELP
 
-# 3.4 Plot the fit model. Use tidybayes and ggdist with your model to show fit and credible intervals with the raw data points on top. modelr::data.grid() might help as well.
+**Yes, they are different. Lazy caste has a .95 interval that does not cross 0, so it is quite different from worker caste (estimated energy is lower)**
+
+### 3.4 Plot the fit model. Use tidybayes and ggdist with your model to show fit and credible intervals with the raw data points on top. modelr::data.grid() might help as well.
 
 ```{r 3.4}
+#gather coefficient draws
+rat_coef_draws <- gather_draws(rat_brm2,
+                               b_Intercept,
+                               b_lnmass,
+                               b_casteworker,
+                               sigma)
 
+#use stat_halfeye to plot with credible interval!
+ggplot(rat_coef_draws,
+       mapping=aes(x=.value))+
+  facet_wrap(~.variable, scale="free")+
+  stat_halfeye()
 ```
-####GET HELP
 
 ## <span style="color: red;">*Extra credit:* submitted via GitHub.</span>
 ### <span style="color: red;">Repository: https://github.com/ninamcdonnell/biol607_mcdonnell/tree/master/homework/homework_markdown
